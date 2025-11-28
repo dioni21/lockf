@@ -3,6 +3,7 @@
 #
 
 BINDIR=/usr/local/bin
+BINDIR=~/bin
 
 lockf: lockf.c err.c err.h
 	gcc -s -Wall -O2 -o lockf lockf.c err.c
@@ -19,3 +20,5 @@ install: lockf
 	  strip lockf			; \
 	  cp lockf ${BINDIR}		; \
 	fi
+
+# EOF
