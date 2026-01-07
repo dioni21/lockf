@@ -13,8 +13,8 @@ endif
 
 TARGET := lockf$(EXEEXT)
 
-$(TARGET): lockf.c err.c err.h
-	gcc -s -Wall -O3 -o $(TARGET) lockf.c err.c
+$(TARGET): lockf.c Makefile
+	gcc -s -Wall -O3 -o $(TARGET) lockf.c -lnbcompat
 
 clean:
 	rm -f $(TARGET)

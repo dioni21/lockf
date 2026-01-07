@@ -22,17 +22,17 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\" $FreeBSD: src/usr.bin/lockf/lockf.1,v 1.7.2.4 2002/06/21 15:27:51 charnier Exp $
+.\" $FreeBSD$
 .\"
 .Dd July 7, 1998
-.Os
 .Dt LOCKF 1
+.Os
 .Sh NAME
 .Nm lockf
 .Nd execute a command while holding a file lock
 .Sh SYNOPSIS
 .Nm
-.Op Fl ks
+.Op Fl kns
 .Op Fl t Ar seconds
 .Ar file
 .Ar command
@@ -42,7 +42,10 @@ The
 .Nm
 utility acquires an exclusive lock on a
 .Ar file ,
-creating it if necessary.
+creating it if necessary,
+.Bf Em
+and removing the file on exit unless explicitly told not to.
+.Ef
 While holding the lock, it executes a
 .Ar command
 with optional
@@ -63,8 +66,22 @@ the mere existence of the
 .Ar file
 is not considered to constitute a lock.
 .Pp
+If the
+.Nm
+utility is being used to facilitate concurrency between a number
+of processes, it is recommended that the
+.Fl k
+option be used.
+This will guarantee lock ordering, as well as implement
+a performance enhanced algorithm which minimizes CPU load associated
+with concurrent unlink, drop and re-acquire activity.
+It should be noted
+that if the
+.Fl k
+option is not used, then no guarantees around lock ordering can be made.
+.Pp
 The following options are supported:
-.Bl -tag -width Fl
+.Bl -tag -width ".Fl t Ar seconds"
 .It Fl k
 Causes the lock file to be kept (not removed) after the command
 completes.
@@ -73,23 +90,42 @@ Causes
 .Nm
 to operate silently.
 Failure to acquire the lock is indicated only in the exit status.
+.It Fl n
+Causes
+.Nm
+to fail if the specified lock
+.Ar file
+does not exist. If
+.Fl n
+is not specified,
+.Nm
+will create
+.Ar file
+if necessary.
 .It Fl t Ar seconds
-Specifies a timeout for waiting for the lock.  By default,
+Specifies a timeout for waiting for the lock.
+By default,
 .Nm
 waits indefinitely to acquire the lock.
 If a timeout is specified with this option,
 .Nm
 will wait at most the given number of
 .Ar seconds
-before giving up.  A timeout of 0 may be given, in which case
+before giving up.
+A timeout of 0 may be given, in which case
 .Nm
 will fail unless it can acquire the lock immediately.
+When a lock times out,
+.Ar command
+is
+.Em not
+executed.
 .El
 .Pp
 In no event will
 .Nm
 break a lock that is held by another process.
-.Sh DIAGNOSTICS
+.Sh EXIT STATUS
 If
 .Nm
 successfully acquires the lock, it returns the exit status produced by
@@ -97,7 +133,7 @@ successfully acquires the lock, it returns the exit status produced by
 Otherwise, it returns one of the exit codes defined in
 .Xr sysexits 3 ,
 as follows:
-.Bl -tag -width F_CANTCREATX
+.Bl -tag -width ".Dv EX_CANTCREAT"
 .It Dv EX_TEMPFAIL
 The specified lock file was already locked by another process.
 .It Dv EX_CANTCREAT
@@ -106,15 +142,27 @@ The
 utility
 was unable to create the lock file, e.g., because of insufficient access
 privileges.
+.It Dv EX_UNAVAILABLE
+The
+.Fl n
+option is specified and the specified lock file does not exist.
 .It Dv EX_USAGE
 There was an error on the
 .Nm
 command line.
 .It Dv EX_OSERR
-A system call (e.g., fork) failed unexpectedly.
+A system call (e.g.,
+.Xr fork 2 )
+failed unexpectedly.
+.It Dv EX_SOFTWARE
+The
+.Ar command
+did not exit normally,
+but may have been signaled or stopped.
 .El
 .Sh SEE ALSO
 .Xr flock 2 ,
+.Xr lockf 3 ,
 .Xr sysexits 3
 .Sh HISTORY
 A
@@ -122,4 +170,4 @@ A
 utility first appeared in
 .Fx 2.2 .
 .Sh AUTHORS
-.An John Polstra Aq jdp@polstra.com .
+.An John Polstra Aq Mt jdp@polstra.com
