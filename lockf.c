@@ -49,7 +49,7 @@ static int lockfd;
 static int keep;
 static volatile sig_atomic_t timed_out;
 
-#if !defined(__FreeBSD__)
+#if !( defined(__FreeBSD__) || defined(__APPLE__) )
 const char *__progname = "lockf";
 #endif
 
@@ -161,7 +161,7 @@ acquire_lock(const char *name)
     int fd;
     struct flock lock;
 
-    if ((fd = open(name, O_RDONLY|O_CREAT|O_NONBLOCK, 0666)) == -1) {
+    if ((fd = open(name, O_RDWR|O_CREAT|O_NONBLOCK, 0666)) == -1) {
 	if (errno == EAGAIN || errno == EINTR)
 	    return -1;
 	err(EX_CANTCREAT, "cannot open %s", name);
