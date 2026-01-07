@@ -1,2 +1,6 @@
+# Ignore the binaries generated
+
 lockf
 lockf.exe
+
+# EOF
