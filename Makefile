@@ -1,5 +1,6 @@
 
-PREFIX=/usr/local
+DESTDIR=
+PREFIX=/usr
 BINDIR=$(PREFIX)/bin
 MANDIR=$(PREFIX)/share/man/man1
 
@@ -20,9 +21,9 @@ clean:
 	rm -f $(TARGET)
 
 install: $(TARGET) lockf.1
-	install -d $(BINDIR) $(MANDIR)
-	install -s -m 755 $(TARGET) $(BINDIR)
-	install -m 644 lockf.1 $(MANDIR)
+	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)
+	install -s -m 755 $(TARGET) $(DESTDIR)$(BINDIR)
+	install -m 644 lockf.1 $(DESTDIR)$(MANDIR)
 
 # RPM build helpers
 RPM_TOPDIR := $(CURDIR)/rpmbuild
@@ -32,7 +33,7 @@ VERSION := $(shell sed -n 's/^Version:[[:space:]]*//p' lockf.spec | head -n1)
 
 dist:
 	mkdir -p dist
-	tar czf dist/lockf-$(VERSION).tar.gz --transform 's,^,lockf-$(VERSION)/,' lockf.c err.c err.h lockf.1 Makefile README
+	tar czf dist/lockf-$(VERSION).tar.gz --transform 's,^,lockf-$(VERSION)/,' lockf.c lockf.1 Makefile README
 
 srpm: dist
 	mkdir -p $(RPM_TOPDIR)/BUILD $(RPM_TOPDIR)/RPMS $(RPM_TOPDIR)/SOURCES $(RPM_TOPDIR)/SPECS $(RPM_TOPDIR)/SRPMS
