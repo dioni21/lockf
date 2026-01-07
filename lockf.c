@@ -24,7 +24,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -32,6 +31,7 @@ __FBSDID("$FreeBSD$");
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -168,11 +168,24 @@ static int
 acquire_lock(const char *name, int flags)
 {
 	int fd;
+	int flock_flags;
 
-	if ((fd = open(name, O_RDONLY|O_EXLOCK|flags, 0666)) == -1) {
+	if ((fd = open(name, O_RDONLY|flags, 0666)) == -1) {
 		if (errno == EAGAIN || errno == EINTR)
 			return (-1);
 		err(EX_CANTCREAT, "cannot open %s", name);
+	}
+
+	flock_flags = LOCK_EX;
+	if (flags & O_NONBLOCK)
+		flock_flags |= LOCK_NB;
+
+	if (flock(fd, flock_flags) == -1) {
+		if (errno == EWOULDBLOCK || errno == EAGAIN || errno == EINTR) {
+			close(fd);
+			return (-1);
+		}
+		err(EX_CANTCREAT, "cannot lock %s", name);
 	}
 	return (fd);
 }
@@ -208,9 +221,10 @@ killed(int sig)
  * Signal handler for SIGALRM.
  */
 static void
-timeout(int sig __unused)
+timeout(int sig)
 {
 
+	(void)sig;
 	timed_out = 1;
 }
 
@@ -232,10 +246,19 @@ wait_for_lock(const char *name)
 {
 	int fd;
 
-	if ((fd = open(name, O_RDONLY|O_EXLOCK, 0666)) == -1) {
+	if ((fd = open(name, O_RDONLY, 0666)) == -1) {
 		if (errno == ENOENT || errno == EINTR)
 			return;
 		err(EX_CANTCREAT, "cannot open %s", name);
+	}
+
+	/* Block until we can acquire the lock. */
+	if (flock(fd, LOCK_EX) == -1) {
+		if (errno == EINTR) {
+			close(fd);
+			return;
+		}
+		err(EX_CANTCREAT, "cannot lock %s", name);
 	}
 	close(fd);
 }
