@@ -7,7 +7,12 @@ License:        BSD-4-Clause
 URL:            https://cgit.freebsd.org/src/tree/usr.bin/lockf
 Source0:        %{name}-%{version}.tar.gz
 
-BuildRequires:  gcc, make
+BuildRequires:  gcc
+BuildRequires:  make
+BuildRequires:  libnbcompat-devel
+
+Requires:       libnbcompat
+
 
 %global debug_package %{nil}
 

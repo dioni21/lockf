@@ -1,6 +1,10 @@
 # Ignore the binaries generated
-
 lockf
 lockf.exe
+
+# Build artifacts
+dist/
+releases/
+rpmbuild/
 
 # EOF
