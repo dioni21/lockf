@@ -4,11 +4,12 @@ SHELL = /bin/bash
 # Project settings
 VERSION := $(shell sed -n 's/^Version:[[:space:]]*//p' lockf.spec | head -n1)
 TARGET := lockf
+TOPDIR ?= $(shell rpm --eval "%{_topdir}")
 
 # Default target
-.DEFAULT_GOAL := rpm
+.DEFAULT_GOAL := build
 
-.PHONY: build dist srpm rpm install copr clean distclean help
+.PHONY: build dist srpm rpm install install-rpm copr clean distclean help
 
 ## build: Compile lockf binary locally (for development)
 build: lockf.c Makefile
@@ -21,21 +22,31 @@ dist:
 
 ## srpm: Build source RPM package
 srpm: dist
-	mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-	cp lockf.spec ~/rpmbuild/SPECS/
-	cp dist/lockf-$(VERSION).tar.gz ~/rpmbuild/SOURCES/
-	rpmbuild -bs ~/rpmbuild/SPECS/lockf.spec
+	mkdir -p $(TOPDIR)/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+	cp lockf.spec $(TOPDIR)/SPECS/
+	cp dist/lockf-$(VERSION).tar.gz $(TOPDIR)/SOURCES/
+	rpmbuild -bs $(TOPDIR)/SPECS/lockf.spec
 	mkdir -p releases
-	cp ~/rpmbuild/SRPMS/lockf-$(VERSION)-*.src.rpm releases/
+	cp $(TOPDIR)/SRPMS/lockf-$(VERSION)-*.src.rpm releases/
 
 ## rpm: Build binary RPM package (default target)
 rpm: srpm
-	rpmbuild -ba ~/rpmbuild/SPECS/lockf.spec
+	rpmbuild -ba $(TOPDIR)/SPECS/lockf.spec
 	mkdir -p releases
-	cp ~/rpmbuild/RPMS/*/lockf-$(VERSION)-*.rpm releases/
+	cp $(TOPDIR)/RPMS/*/lockf-$(VERSION)-*.rpm releases/
 
-## install: Install lockf from the built RPM (requires sudo)
-install: rpm
+PREFIX ?= /usr
+DESTDIR ?=
+
+## install: Install binary and man page to DESTDIR
+install: build
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m 755 $(TARGET) $(DESTDIR)$(PREFIX)/bin/
+	install -d $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m 644 lockf.1 $(DESTDIR)$(PREFIX)/share/man/man1/
+
+## install-rpm: Install lockf from the built RPM (requires sudo)
+install-rpm: rpm
 	sudo dnf install -y releases/lockf-$(VERSION)-*.x86_64.rpm
 
 ## copr: Submit build to COPR (dioni21/jonny-utils)
